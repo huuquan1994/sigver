@@ -9,7 +9,7 @@ with codecs.open(os.path.join(setup_path, 'README.md'), encoding='utf-8-sig') as
 
 setup(name='sigver',
       version='0.2',
-      url='https://github.com/huuquan1994/sigver',
+      url='https://github.com/luizgh/sigver',
       maintainer='Luiz G. Hafemann',
       maintainer_email='luiz.gh@mailbox.org',
       description='Signature verification package, for learning representations from signature '
