@@ -1,0 +1,9 @@
+.idea
+*.pyc
+sigver.egg-info
+.ipynb_checkpoints/
+data/
+models/
+*.jpg
+*.png
+*.jpeg
