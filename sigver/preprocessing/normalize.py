@@ -1,6 +1,8 @@
 import numpy as np
 from skimage import filters, transform
 from typing import Tuple
+from skimage.transform import resize
+from skimage import img_as_ubyte
 
 
 def preprocess_signature(img: np.ndarray,
