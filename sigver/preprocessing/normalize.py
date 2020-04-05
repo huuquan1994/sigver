@@ -44,107 +44,64 @@ def preprocess_signature(img: np.ndarray,
 
 
 def normalize_image(img: np.ndarray,
-					canvas_size: Tuple[int, int] = (840, 1360)) -> np.ndarray:
-	""" Centers an image in a pre-defined canvas size, and remove
-	noise using OTSU's method.
+                    canvas_size: Tuple[int, int] = (840, 1360)) -> np.ndarray:
+    """ Centers an image in a pre-defined canvas size, and remove
+    noise using OTSU's method.
 
-	Parameters
-	----------
-	img : np.ndarray (H x W)
-		The image to be processed
-	canvas_size : tuple (H x W)
-		The desired canvas size
+    Parameters
+    ----------
+    img : np.ndarray (H x W)
+        The image to be processed
+    canvas_size : tuple (H x W)
+        The desired canvas size
 
-	Returns
-	-------
-	np.ndarray (H x W)
-		The normalized image
-	"""
+    Returns
+    -------
+    np.ndarray (H x W)
+        The normalized image
+    """
 
-	# 1) Crop the image before getting the center of mass
+    # 1) Crop the image before getting the center of mass
 
-	# Apply a gaussian filter on the image to remove small components
-	# Note: this is only used to define the limits to crop the image
-	blur_radius = 2
-	blurred_image = filters.gaussian(img, blur_radius, preserve_range=True)
+    # Apply a gaussian filter on the image to remove small components
+    # Note: this is only used to define the limits to crop the image
+    max_rows, max_cols = canvas_size
 
-	# Binarize the image using OTSU's algorithm. This is used to find the center
-	# of mass of the image, and find the threshold to remove background noise
-	threshold = filters.threshold_otsu(img)
+    blur_radius = 2
+    blurred_image = filters.gaussian(img, blur_radius, preserve_range=True)
 
-	# Find the center of mass
-	binarized_image = blurred_image > threshold
-	r, c = np.where(binarized_image == 0)
-	r_center = int(r.mean() - r.min())
-	c_center = int(c.mean() - c.min())
+    # Binarize the image using OTSU's algorithm. This is used to find the center
+    # of mass of the image, and find the threshold to remove background noise
+    threshold = filters.threshold_otsu(img)
 
-	# Crop the image with a tight box
-	cropped = img[r.min(): r.max(), c.min(): c.max()]
+    # Find the center of mass
+    binarized_image = blurred_image > threshold
+    r, c = np.where(binarized_image == 0)
+    r_center = int(r.mean() - r.min())
+    c_center = int(c.mean() - c.min())
 
-	# 2) Center the image
-	img_rows, img_cols = cropped.shape
-	def normalize_image(img: np.ndarray,
-					canvas_size: Tuple[int, int] = (840, 1360)) -> np.ndarray:
-	""" Centers an image in a pre-defined canvas size, and remove
-	noise using OTSU's method.
+    # Crop the image with a tight box
+    size = (400,650)
+    y_min = r.min()-5 if (r.min()-5)>=0 else 0
+    y_max = r.max()+5 if (r.max()+5)<=max_rows else max_rows
+    x_min = c.min()-5 if (c.min()-5)>=0 else 0
+    x_max = c.max()+5 if (c.max()+5)<=max_cols else max_cols
+    
+    cropped = img[y_min: y_max, x_min: x_max]
+    cropped = img_as_ubyte(resize(cropped, size))    
+    img_rows, img_cols = cropped.shape
 
-	Parameters
-	----------
-	img : np.ndarray (H x W)
-		The image to be processed
-	canvas_size : tuple (H x W)
-		The desired canvas size
+    normalized_image = np.ones((max_rows, max_cols), dtype=np.uint8) * 255
+    # 2) Center the image
+    # Add the image to the blank canvas
+    r_start = (max_rows-img_rows)//2 + 1
+    c_start = (max_cols-img_cols)//2 + 1
+    normalized_image[r_start:r_start + img_rows -2, c_start:c_start + img_cols -2] = cropped[1:-1, 1:-1]
 
-	Returns
-	-------
-	np.ndarray (H x W)
-		The normalized image
-	"""
+    # Remove noise - anything higher than the threshold. Note that the image is still grayscale
+    normalized_image[normalized_image > threshold] = 255
 
-	# 1) Crop the image before getting the center of mass
-
-	# Apply a gaussian filter on the image to remove small components
-	# Note: this is only used to define the limits to crop the image
-	max_rows, max_cols = canvas_size
-
-	blur_radius = 2
-	blurred_image = filters.gaussian(img, blur_radius, preserve_range=True)
-
-	# Binarize the image using OTSU's algorithm. This is used to find the center
-	# of mass of the image, and find the threshold to remove background noise
-	threshold = filters.threshold_otsu(img)
-
-	# Find the center of mass
-	binarized_image = blurred_image > threshold
-	r, c = np.where(binarized_image == 0)
-	r_center = int(r.mean() - r.min())
-	c_center = int(c.mean() - c.min())
-
-	# Crop the image with a tight box
-	size = (400,650)
-	y_min = r.min()-5 if (r.min()-5)>=0 else 0
-	y_max = r.max()+5 if (r.max()+5)<=max_rows else max_rows
-	x_min = c.min()-5 if (c.min()-5)>=0 else 0
-	x_max = c.max()+5 if (c.max()+5)<=max_cols else max_cols
-	
-	# 2) Center the image
-	cropped = img[y_min: y_max, x_min: x_max]
-	cropped = img_as_ubyte(resize(cropped, size))
-
-	img_rows, img_cols = cropped.shape
-
-	normalized_image = np.ones((max_rows, max_cols), dtype=np.uint8) * 255
-	# Add the image to the blank canvas
-	r_start = (max_rows-img_rows)//2 + 1
-	c_start = (max_cols-img_cols)//2 + 1
-	normalized_image[r_start:r_start + img_rows -2, c_start:c_start + img_cols -2] = cropped[1:-1, 1:-1]
-	# cv2.imshow('result', cropped)
-	# cv2.waitKey()
-
-	# Remove noise - anything higher than the threshold. Note that the image is still grayscale
-	normalized_image[normalized_image > threshold] = 255
-
-	return normalized_image
+    return normalized_image
 
 
 def remove_background(img: np.ndarray) -> np.ndarray:
